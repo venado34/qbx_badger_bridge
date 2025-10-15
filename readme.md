@@ -1,6 +1,3 @@
-Perfect! Here’s a **fully upgraded, GitHub-friendly README.md** for your `qbx_badger_bridge` resource. It includes **badges, a Table of Contents, and a quick usage example**.
-
-````markdown
 # QBX Badger Bridge (Discord Job Sync)
 
 ![Version](https://img.shields.io/badge/version-2.0.0-blue)
