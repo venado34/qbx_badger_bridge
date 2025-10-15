@@ -1,45 +1,39 @@
 Config = {}
 
---------------------------------------------------------------------------------
--- Debugging
---------------------------------------------------------------------------------
--- Enable or disable detailed debug logs in the server/client console
 Config.Debug = true
 
 --------------------------------------------------------------------------------
--- Notification System
---------------------------------------------------------------------------------
+-- Character System
 -- Options:
--- 'crm-hud' -> Uses CRM-HUD notifications
--- 'ox_lib'  -> Uses ox_lib notify system
--- 'none'    -> Disables notifications entirely
-Config.Notifications = 'crm-hud'
-
+-- 'qbx_core'          => QBX-Core native character system
+-- 'crm-multicharacter' => CRM-Multicharacter system
+-- 'custom'            => Custom character system (requires manual event setup)
+-- 'none'              => No automatic job sync
 --------------------------------------------------------------------------------
--- Multicharacter System
---------------------------------------------------------------------------------
--- Server event fired when a player has loaded their character
--- Used to trigger the automatic job sync
 Config.Multicharacter = 'crm-multicharacter'
 
 --------------------------------------------------------------------------------
--- Commands
+-- Notifications System
+-- 'none'      => No notifications
+-- 'crm-hud'   => CRM HUD notification
+-- 'ox_lib'    => ox_lib notification
 --------------------------------------------------------------------------------
-Config.Commands = {
-    -- Command players use to open the job selection menu
-    jobsMenu = "jobs",
-    -- Command for admins to manually synchronize jobs with Discord roles
-    syncJobs = "syncjobs"
-}
+Config.Notifications = 'crm-hud'
 
 --------------------------------------------------------------------------------
 -- Admin Permissions
+-- List of ACE permissions required to use admin commands
 --------------------------------------------------------------------------------
--- ACE permissions required to use administrative commands like /syncjobs
--- Any player with at least ONE of these permissions will have access
 Config.AdminPermissions = {
     "admin",
-    "mod",
+    "superadmin"
 }
 
-
+--------------------------------------------------------------------------------
+-- Commands
+-- All commands are configurable here
+--------------------------------------------------------------------------------
+Config.Commands = {
+    jobs = 'jobs',          -- Opens the job selection menu
+    syncJobs = 'syncjobs',  -- Manually syncs player jobs
+}

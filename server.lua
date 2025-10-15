@@ -1,7 +1,9 @@
 -- server.lua
 -- QBX Badger Bridge (Discord Job Sync)
 
--- Wait until Config and RankedJobs are ready
+--------------------------------------------------------------------------------
+-- Wait for Config and RankedJobs to load
+--------------------------------------------------------------------------------
 Citizen.CreateThread(function()
     while Config == nil or RankedJobs == nil do
         Citizen.Wait(100)
@@ -10,187 +12,193 @@ Citizen.CreateThread(function()
     if Config.Debug then
         print(('^2[%s] Config and jobs loaded. Initializing server script.^7'):format(GetCurrentResourceName()))
     end
+end)
 
-    --------------------------------------------------------------------------------
-    -- Helper functions
-    --------------------------------------------------------------------------------
-    local function GetPlayer(source)
-        return exports['qbx_core']:GetPlayer(source)
-    end
+--------------------------------------------------------------------------------
+-- Helper Functions
+--------------------------------------------------------------------------------
+local function GetPlayer(source)
+    return exports['qbx_core']:GetPlayer(source)
+end
 
-    local function ConvertRolesToLookupTable(roleList)
-        local lookup = {}
-        if type(roleList) ~= "table" then return lookup end
-        for _, roleName in ipairs(roleList) do
-            lookup[roleName] = true
+local function HasAdminPermission(source)
+    for _, permission in ipairs(Config.AdminPermissions) do
+        if IsPlayerAceAllowed(source, permission) then
+            return true
         end
-        return lookup
+    end
+    return false
+end
+
+local function tableContains(tbl, val)
+    for _, v in ipairs(tbl) do
+        if v == val then return true end
+    end
+    return false
+end
+
+--------------------------------------------------------------------------------
+-- Core Job Synchronization
+--------------------------------------------------------------------------------
+function SyncPlayerJobs(playerSource, manual)
+    local Player = GetPlayer(playerSource)
+    if not Player then
+        print("^1[QBX Badger Bridge] Player not found for source " .. playerSource .. "^7")
+        return
     end
 
-    local function HasAdminPermission(source)
-        for _, permission in ipairs(Config.AdminPermissions) do
-            if IsPlayerAceAllowed(source, permission) then
-                return true
-            end
-        end
-        return false
-    end
-
-    --------------------------------------------------------------------------------
-    -- Core job sync
-    --------------------------------------------------------------------------------
-    local function SyncPlayerJobs(playerSource, isManual)
-        local Player = GetPlayer(playerSource)
-        if not Player then return end
-
-        if isManual and Config.Debug then
-            print(('[DEBUG] Manual sync started for source: %s'):format(playerSource))
-            TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource, "Starting manual synchronization...", "primary")
-        end
-
-        exports['honeybadger-resource']:GetPlayerRoles(playerSource, function(roleList)
-            local discordRoles = ConvertRolesToLookupTable(roleList)
-
-            if Config.Debug then
-                print(('[DEBUG] Received roles for %s: %s'):format(playerSource, json.encode(discordRoles)))
-            end
-
-            -- Determine which jobs the player should have
-            local shouldHaveJobs = {}
-            for _, jobData in ipairs(RankedJobs) do
-                if discordRoles[jobData.roleName] then
-                    if not shouldHaveJobs[jobData.job] then
-                        shouldHaveJobs[jobData.job] = jobData.grade
-                    end
-                end
-            end
-
-            -- Get current jobs
-            local currentlyHasJobs = {}
-            if Player.PlayerData.jobs and type(Player.PlayerData.jobs) == "table" then
-                for _, jobData in ipairs(Player.PlayerData.jobs) do
-                    currentlyHasJobs[jobData.name] = jobData.grade
-                end
-            end
-
-            -- Assign or update jobs
-            local changesMade = false
-            for jobName, jobGrade in pairs(shouldHaveJobs) do
-                if currentlyHasJobs[jobName] ~= jobGrade then
-                    Player.Functions.SetJob(jobName, jobGrade)
-                    if isManual then
-                        TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource, ('Assigned/Updated job: %s'):format(jobName), "success")
-                    end
-                    changesMade = true
-                end
-            end
-
-            -- Remove jobs no longer in Discord roles
-            for jobName, _ in pairs(currentlyHasJobs) do
-                if not shouldHaveJobs[jobName] then
-                    Player.Functions.RemoveJob(jobName)
-                    if isManual then
-                        TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource, ('Removed job: %s'):format(jobName), "error")
-                    end
-                    changesMade = true
-                end
-            end
-
-            -- Save changes
-            if changesMade then
-                Player.Functions.Save()
-                if Config.Debug then
-                    print(('[DEBUG] Player data saved for source %s'):format(playerSource))
-                end
-            end
-
-            if isManual then
-                if Config.Debug then
-                    print(('[DEBUG] Job sync complete for source %s'):format(playerSource))
-                end
-                TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource, "Synchronization complete!", "success")
-            end
-        end)
+    if Config.Debug then
+        print(('[%s][DEBUG] Starting job sync for %s (%s). Manual trigger: %s'):format(
+            GetCurrentResourceName(),
+            Player.PlayerData.charinfo.firstname .. " " .. Player.PlayerData.charinfo.lastname,
+            playerSource,
+            tostring(manual)
+        ))
     end
 
     --------------------------------------------------------------------------------
-    -- Admin commands
+    -- Fetch Discord roles from Honeybadger
     --------------------------------------------------------------------------------
-    RegisterCommand(Config.Commands.syncJobs, function(source, args, rawCommand)
-        if not HasAdminPermission(source) then
-            TriggerClientEvent('qbx_badger_bridge:client:Notify', source, "You are not authorized to use this command.", "error")
+    exports['honeybadger-resource']:GetPlayerRoles(playerSource, function(roles)
+        if not roles then
+            print("^1[QBX Badger Bridge] Could not fetch Discord roles for source " .. playerSource .. "^7")
             return
         end
-        SyncPlayerJobs(source, true)
-    end, true)
 
-    --------------------------------------------------------------------------------
-    -- Server events for client UI
-    --------------------------------------------------------------------------------
-    RegisterNetEvent('qbx_badger_bridge:server:getJobs', function()
-        local src = source
-        local Player = GetPlayer(src)
-        if not Player then return end
-        TriggerClientEvent('qbx_badger_bridge:client:receiveJobs', src, Player.PlayerData.jobs)
-    end)
+        if Config.Debug then
+            print(('[%s][DEBUG] Discord roles for source %s: %s'):format(
+                GetCurrentResourceName(),
+                playerSource,
+                table.concat(roles, ", ")
+            ))
+        end
 
-    RegisterNetEvent('qbx_badger_bridge:server:setActiveJob', function(jobName)
-        local src = source
-        local Player = GetPlayer(src)
-        if not Player then return end
+        local changesMade = false
 
-        local hasJob = false
-        for _, jobData in ipairs(Player.PlayerData.jobs) do
-            if jobData.name == jobName then
-                hasJob = true
-                break
+        --------------------------------------------------------------------------------
+        -- Determine which jobs the player should have
+        --------------------------------------------------------------------------------
+        for _, rankedJob in ipairs(RankedJobs) do
+            local roleName, jobName, jobGrade = rankedJob.roleName, rankedJob.job, rankedJob.grade
+
+            if tableContains(roles, roleName) then
+                local currentJob = Player.PlayerData.jobs[jobName] or -1
+                if currentJob ~= jobGrade then
+                    local success = Player.Functions.SetJob(jobName, jobGrade)
+                    if success then
+                        changesMade = true
+                        if Config.Debug then
+                            print(('[%s][DEBUG] Assigned/Updated job %s to grade %s for source %s'):format(
+                                GetCurrentResourceName(),
+                                jobName,
+                                jobGrade,
+                                playerSource
+                            ))
+                        end
+                    else
+                        print(('[%s][ERROR] Failed to assign job %s grade %s for source %s. Check if the job exists in QBX-Core.'):format(
+                            GetCurrentResourceName(),
+                            jobName,
+                            jobGrade,
+                            playerSource
+                        ))
+                    end
+                end
             end
         end
 
-        if hasJob then
-            Player.Functions.SetActiveJob(jobName)
+        --------------------------------------------------------------------------------
+        -- Save player data if changes made
+        --------------------------------------------------------------------------------
+        if changesMade then
+            local saveSuccess, saveError = pcall(function()
+                Player.Functions.Save()
+            end)
+            if saveSuccess then
+                if Config.Debug then
+                    print(('[%s][DEBUG] Player data saved for source %s.'):format(
+                        GetCurrentResourceName(),
+                        playerSource
+                    ))
+                end
+            else
+                print(('[%s][ERROR] Failed to save player data for source %s: %s'):format(
+                    GetCurrentResourceName(),
+                    playerSource,
+                    tostring(saveError)
+                ))
+            end
         else
-            TriggerClientEvent('qbx_badger_bridge:client:Notify', src, "You do not have that job.", "error")
+            if Config.Debug then
+                print(('[%s][DEBUG] No job changes detected for source %s. Skipping save.'):format(
+                    GetCurrentResourceName(),
+                    playerSource
+                ))
+            end
+        end
+
+        if Config.Debug then
+            print(('[%s][DEBUG] Job sync complete for source %s.'):format(
+                GetCurrentResourceName(),
+                playerSource
+            ))
         end
     end)
+end
 
-    --------------------------------------------------------------------------------
-    -- Character Loaded Event (Modular)
-    --------------------------------------------------------------------------------
-    -- Handles different character systems based on configuration: 'qbx_core', 'crm_multicharacter', 'none'
-    if Config.Multicharacter == 'qbx_core' then
-        AddEventHandler('QBCore:Server:OnPlayerLoaded', function()
-            local src = source
-            local Player = GetPlayer(src)
-            if not Player then return end
-            if Config.Debug then
-                print(('[DEBUG] QBX-Core player %s (%s) loaded. Triggering job sync.'):format(
-                    Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname,
-                    src
-                ))
-            end
-            SyncPlayerJobs(src, false)
-        end)
+--------------------------------------------------------------------------------
+-- Character Loaded Event (Modular)
+--------------------------------------------------------------------------------
+if Config.Multicharacter == 'qbx_core' then
+    AddEventHandler('QBCore:Server:OnPlayerLoaded', function()
+        local src = source
+        local Player = GetPlayer(src)
+        if not Player then return end
 
-    elseif Config.Multicharacter == 'crm_multicharacter' then
-        local CharacterLoadedEvent = 'crm-multicharacter:server:playerLoaded'
-        RegisterNetEvent(CharacterLoadedEvent, function()
-            local src = source
-            local Player = GetPlayer(src)
-            if not Player then
-                print("^1[QBX Badger Bridge] No compatible character system detected. Automatic sync disabled.^7")
-                return
-            end
-            if Config.Debug then
-                print(('[DEBUG] CRM-Multicharacter player %s (%s) loaded. Triggering job sync.'):format(
-                    Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname,
-                    src
-                ))
-            end
-            SyncPlayerJobs(src, false)
-        end)
+        if Config.Debug then
+            print(('[%s][DEBUG] QBX-Core player %s (%s) loaded. Triggering job sync.'):format(
+                GetCurrentResourceName(),
+                Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname,
+                src
+            ))
+        end
 
-    else
-        print("^1[QBX Badger Bridge] No compatible character system detected. Automatic sync disabled.^7")
+        SyncPlayerJobs(src, false)
+    end)
+
+elseif Config.Multicharacter == 'crm-multicharacter' then
+    local CharacterLoadedEvent = 'crm-multicharacter:server:playerLoaded'
+    RegisterNetEvent(CharacterLoadedEvent, function()
+        local src = source
+        local Player = GetPlayer(src)
+        if not Player then
+            print("^1[QBX Badger Bridge] No compatible character system detected. Automatic sync disabled.^7")
+            return
+        end
+
+        if Config.Debug then
+            print(('[%s][DEBUG] CRM-Multicharacter player %s (%s) loaded. Triggering job sync.'):format(
+                GetCurrentResourceName(),
+                Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname,
+                src
+            ))
+        end
+
+        SyncPlayerJobs(src, false)
+    end)
+
+else
+    -- Fallback
+    print("^1[QBX Badger Bridge] No compatible character system detected. Automatic sync disabled.^7")
+end
+
+--------------------------------------------------------------------------------
+-- Admin Commands (Modular)
+--------------------------------------------------------------------------------
+RegisterCommand(Config.Commands.syncJobs, function(source)
+    if not HasAdminPermission(source) then
+        TriggerClientEvent('qbx_badger_bridge:client:Notify', source, "You are not authorized to use this command.", "error")
+        return
     end
-end)
+    SyncPlayerJobs(source, true)
+end, true)
