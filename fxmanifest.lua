@@ -10,12 +10,12 @@ files {
     'lib/LemonUI.FiveM.dll'
 }
 
-shared_script 'config/config.lua'
-
-server_scripts {
-    'config/jobs.lua',
-    'server.lua'
+shared_scripts {
+    'config/config.lua',
+    'config/jobs.lua'
 }
+
+server_script 'server.lua'
 
 client_scripts {
     '@qbx_badger_bridge/lib/LemonUI.FiveM.dll',
