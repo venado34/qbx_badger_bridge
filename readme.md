@@ -1,97 +1,146 @@
+Perfect! Here’s a **fully upgraded, GitHub-friendly README.md** for your `qbx_badger_bridge` resource. It includes **badges, a Table of Contents, and a quick usage example**.
+
+````markdown
 # QBX Badger Bridge (Discord Job Sync)
 
-This script automatically synchronizes a player's in-game jobs on a FiveM server with their roles on a Discord server. It is specifically designed to work with a **multi-job enabled version of QBX-Core** and uses the Honeybadger resource to fetch Discord roles.
+![Version](https://img.shields.io/badge/version-2.0.0-blue)
+![Dependencies](https://img.shields.io/badge/dependencies-QBX--Core-orange)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-The script establishes Discord as the single "source of truth" for all player jobs and ranks. It handles adding, updating, and removing jobs automatically, both when a player logs in and through a manual admin command. It also provides a clean user interface powered by `ox_lib` for players to manage their active job.
+**QBX Badger Bridge** automatically synchronizes a player's in-game jobs with their Discord roles. Designed for **multi-job-enabled QBX-Core**, this resource ensures that Discord is the single source of truth for job assignments and ranks.
+
+It also provides a clean `ox_lib` interface for players to view and select their active job.
+
+---
+
+## Table of Contents
+
+- [Features](#features)
+- [Dependencies](#dependencies)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Quick Example](#quick-example)
+- [How It Works](#how-it-works)
+- [Staff Procedures](#staff-procedures)
+
+---
 
 ## Features
 
-- **Full Synchronization:** Automatically assigns, updates, and removes in-game jobs based on a player's Discord roles every time they load their character.
-- **Multi-Job Support:** Natively supports assigning multiple jobs simultaneously, compatible with modified QBX-Core frameworks.
-- **Prioritized Ranks:** Uses a carefully ordered `jobs.lua` file to ensure players are always assigned the single highest rank they are eligible for within each unique job category.
-- **Admin Control:** Includes a configurable admin-only command (`/syncjobs` by default) to manually trigger the synchronization process for a player.
-- **Player UI:** Provides a clean `ox_lib` context menu (`/jobsmenu` by default) for players to view all of their jobs and select which one is active.
-- **Configurable:** Almost all features, including command names, admin permissions, and notification systems, can be easily changed in `config/config.lua`.
+- **Automatic Synchronization:** Assigns, updates, or removes jobs when a player loads their character based on Discord roles.
+- **Multi-Job Support:** Works with multiple jobs per player, fully compatible with QBX-Core multi-job setups.
+- **Rank Prioritization:** Ensures each player receives the highest eligible rank per job using a structured `RankedJobs` table.
+- **Admin Control:** Admins can manually trigger synchronization via a configurable command (default: `/syncjobs`).
+- **Player UI:** Players can view and select their active job using an `ox_lib` context menu (default command: `/jobs`).
+- **Configurable:** Almost all settings—including commands, admin permissions, and notification systems—can be adjusted via `config/config.lua`.
 
 ---
+
 ## Dependencies
 
-This script will not function without the following resources installed and configured correctly.
+Ensure the following resources are installed:
 
-- **[QBX-Core (Multi-Job Fork)](https://github.com/venado34/qbx_core):** This script is built for a specific version of QBX-Core that supports multiple jobs.
-- **[Honeybadger Resource](https://gitlab.nerdyjohnny.com/fivem/resources/essentials/owenbadger/honeybadger-resource):** The Discord API bridge used to fetch player role information.
-- **[ox_lib](https://github.com/overextended/ox_lib):** Required for the job selection UI and optionally for notifications.
-- **[crm-multicharacter](https://github.com/project-crm/crm-multicharacter):** Required for the automatic job sync when a player loads their character.
+- **[QBX-Core (Multi-Job Fork)](https://github.com/venado34/qbx_core)**
+- **[Honeybadger Resource](https://gitlab.nerdyjohnny.com/fivem/resources/essentials/owenbadger-resource)**
+- **[ox_lib](https://github.com/overextended/ox_lib)**
+- **[crm-multicharacter](https://github.com/project-crm/crm-multicharacter)** (required for automatic sync on character load)
 
 ---
+
 ## Installation
 
-1.  **Prerequisites:** Ensure all dependencies listed above are installed and working on your server.
+1. **Install Dependencies:** Confirm all required resources are present and running.
 
-2.  **Modify Honeybadger (CRITICAL STEP):** This script requires a custom export to be added to `honeybadger-resource`. Open `honeybadger-resource/server.lua` and **add the following code to the very end of the file**:
-    ```lua
-    exports('GetPlayerRoles', function(playerId, callback)
-        local discord_id = nil
-        for _, id in ipairs(GetPlayerIdentifiers(playerId)) do
-            if string.match(id, "^discord:") then
-                discord_id = string.gsub(id, "discord:", "")
-                break
-            end
+2. **Modify Honeybadger Resource:**  
+Add this export to `honeybadger-resource/server.lua` **at the end** of the file:
+
+```lua
+exports('GetPlayerRoles', function(playerId, callback)
+    local discord_id = nil
+    for _, id in ipairs(GetPlayerIdentifiers(playerId)) do
+        if string.match(id, "^discord:") then
+            discord_id = string.gsub(id, "discord:", "")
+            break
         end
+    end
 
-        if not discord_id then
+    if not discord_id then
+        if callback then callback(nil) end
+        return
+    end
+
+    PerformHttpRequest(("%s/user/%s.json"):format(honeybadger_url, discord_id), function(code, response)
+        if code ~= 200 or not response or response == "" then
             if callback then callback(nil) end
             return
         end
 
-        PerformHttpRequest(("%s/user/%s.json"):format(honeybadger_url, discord_id), function(code, response)
-            if code ~= 200 or not response or response == "" then
-                if callback then callback(nil) end
-                return
-            end
-
-            local ok, decoded = pcall(json.decode, response)
-            if not ok or type(decoded) ~= "table" then
-                if callback then callback(nil) end
-                return
-            end
-            
-            if callback then callback(decoded) end
-        end)
+        local ok, decoded = pcall(json.decode, response)
+        if not ok or type(decoded) ~= "table" then
+            if callback then callback(nil) end
+            return
+        end
+        
+        if callback then callback(decoded) end
     end)
-    ```
+end)
+````
 
-3.  **Install the Script:**
-    - Place the `qbx_badger_bridge` folder into your `resources` directory.
-    - Add `ensure qbx_badger_bridge` to your `server.cfg`. This line must come *after* all of the script's dependencies.
+3. **Install QBX Badger Bridge:**
+
+   * Place the `qbx_badger_bridge` folder in your `resources` directory.
+   * Add the following line to `server.cfg` **after all dependencies**:
+
+```cfg
+ensure qbx_badger_bridge
+```
 
 ---
+
 ## Configuration
 
-All configuration is handled in the `config/` subfolder.
+All configurations are located in the `config/` folder.
 
 ### `config/config.lua`
-This file controls the script's settings.
-- `Config.Debug`: Enable or disable detailed console logs.
-- `Config.NotificationSystem`: Choose the notification system to use. Options are `'crm-hud'`, `'ox_lib'`, or `'none'`.
-- `Config.Commands`: Change the names of the `/jobsmenu` and `/syncjobs` commands.
-- `Config.AdminPermissions`: A list of ACE permissions that are allowed to use the `/syncjobs` command.
+
+* **`Config.Debug`** – Enables/disables console debug logs.
+* **`Config.NotificationSystem`** – Options: `'crm-hud'`, `'ox_lib'`, `'none'`.
+* **`Config.Commands`** – Customize `/jobs` and `/syncjobs` commands.
+* **`Config.AdminPermissions`** – ACE permissions required to use admin commands.
 
 ### `config/jobs.lua`
-This file contains the `RankedJobs` table, where you map Discord Role Names to in-game jobs and grades.
 
-**Priority System (IMPORTANT)**
-The order of the `RankedJobs` table is critical. For each unique job (e.g., `police`, `dps`), the script will assign the rank associated with the **first matching role it finds**. Therefore, you must list ranks from **highest to lowest** within each job block.
+Contains the `RankedJobs` table, mapping Discord roles to in-game jobs and grades.
+**Important:** List higher ranks first for each job to ensure proper prioritization.
 
 ---
-## How It Works & Staff Procedures
 
-The script runs automatically every time a player loads their character via `crm-multicharacter`.
+## Quick Example
 
-### **Promotions and Demotions**
-Because Discord is the "source of truth," all staff management **must** be done by changing roles in Discord.
+Players can manage jobs with these commands:
 
-- **To promote or assign a job:** Give the user the appropriate role in Discord. Their job will be updated the next time they log in.
-- **To demote or remove a job:** Remove the role from the user in Discord. Their job will be removed the next time they log in.
+```text
+/jobs           - Opens the job selection menu (ox_lib UI)
+/syncjobs [id]  - Admin-only: manually sync jobs with Discord roles
+```
 
-If a player is promoted in-game via a command (`/setjob`), their rank will be **overwritten and reverted** to match their Discord roles the next time they connect.
+* Players see all assigned jobs and select their active one.
+* Admins can trigger a manual sync at any time.
+
+---
+
+## How It Works
+
+* **Automatic Sync:** Triggered whenever a player loads a character (via `crm-multicharacter`).
+* **Manual Sync:** Admins can run `/syncjobs` to force synchronization for a player.
+
+---
+
+## Staff Procedures
+
+* **Promotions / Job Assignment:** Assign the appropriate Discord role; the in-game job updates automatically.
+* **Demotions / Job Removal:** Remove the Discord role; the in-game job is removed on next login.
+* **In-Game Changes:** Any manual in-game `/setjob` changes will be overridden by Discord roles at next sync.
+
+---
+
