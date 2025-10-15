@@ -1,8 +1,8 @@
 -- client.lua
--- Handles the ox_lib menu for job selection and dynamic notifications.
+-- Handles the ox_lib menu for job selection and notifications.
 
 Citizen.CreateThread(function()
-    -- Wait until the Config table is ready
+    -- Wait until the Config table is loaded
     while Config == nil do
         Citizen.Wait(100)
     end
@@ -14,19 +14,20 @@ Citizen.CreateThread(function()
     --------------------------------------------------------------------------------
     -- Commands
     --------------------------------------------------------------------------------
-    -- Open the job selection menu
+
+    -- Open job selection menu
     RegisterCommand(Config.Commands.jobsMenu, function()
+        if Config.Debug then print('[DEBUG] Player requested job menu.') end
         TriggerServerEvent('qbx_badger_bridge:server:getJobs')
     end, false)
 
     --------------------------------------------------------------------------------
-    -- Event Handlers
+    -- Receive jobs from server and build ox_lib context menu
     --------------------------------------------------------------------------------
-    -- Receive job list from server and build context menu
+
     RegisterNetEvent('qbx_badger_bridge:client:receiveJobs', function(jobs)
         local options = {}
 
-        -- No jobs fallback
         if not jobs or #jobs == 0 then
             table.insert(options, {
                 title = "No Jobs",
@@ -34,9 +35,9 @@ Citizen.CreateThread(function()
                 icon = "fa-solid fa-circle-xmark"
             })
         else
-            -- Build options from jobs
             for i, jobData in ipairs(jobs) do
-                local is_active = (i == 1) -- First job is active
+                -- Determine which job is currently active
+                local is_active = (i == 1) 
 
                 table.insert(options, {
                     title = jobData.label,
@@ -52,33 +53,40 @@ Citizen.CreateThread(function()
             end
         end
 
-        -- Show context menu
-        if lib and lib.showContext then
-            lib.showContext({
+        -- Show ox_lib context menu
+        if exports.ox_lib and exports.ox_lib.showContext then
+            exports.ox_lib:showContext({
                 title = 'Select Active Job',
                 options = options
             })
-        else
-            if Config.Debug then
-                print("^1[QBX Badger Bridge] ox_lib not loaded or showContext export missing.^7")
-            end
+        elseif Config.Debug then
+            print("^1[QBX Badger Bridge] ox_lib not available or showContext export missing.^7")
         end
     end)
 
     --------------------------------------------------------------------------------
-    -- Notification wrapper
+    -- Notifications
     --------------------------------------------------------------------------------
+
     RegisterNetEvent('qbx_badger_bridge:client:Notify', function(message, type)
-        if Config.NotificationSystem == 'ox_lib' and lib and lib.notify then
-            lib.notify({
-                title = '',
-                description = message,
-                type = type or "inform"
-            })
+        if Config.NotificationSystem == 'none' then
+            return
         elseif Config.NotificationSystem == 'crm-hud' then
-            TriggerEvent('crm-hud:sendNotification', {text = message, type = type or "info"})
-        else
-            print(('[QBX Badger Bridge] %s'):format(message))
+            if exports['crm-hud'] and exports['crm-hud'].crm_notify then
+                exports['crm-hud']:crm_notify(message, 5000, 'crm-primary', 'fa-solid fa-circle-info')
+            elseif Config.Debug then
+                print("^1[QBX Badger Bridge] crm-hud not found or crm_notify missing.^7")
+            end
+        elseif Config.NotificationSystem == 'ox_lib' then
+            if exports.ox_lib and exports.ox_lib.notify then
+                exports.ox_lib.notify({
+                    title = 'Job Sync',
+                    description = message,
+                    type = type
+                })
+            elseif Config.Debug then
+                print("^1[QBX Badger Bridge] ox_lib notify not found.^7")
+            end
         end
     end)
 end)

@@ -158,9 +158,3 @@ Supported examples:
 
 * Manage all roles **via Discord**.
 * In-game promotions or demotions are temporary; the next sync will align jobs to Discord roles.
-
----
-
-*Maintained by Venado | Version 2.0.1*
-
-```

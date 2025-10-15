@@ -1,0 +1,5 @@
+include:
+  - project: fivem/resource-configuration
+    file: ci.yml
+    inputs:
+      resource_directory: 'resources/[qbx]/[jobs]/qbx_badger_bridge'
