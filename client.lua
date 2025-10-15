@@ -1,44 +1,36 @@
 -- client.lua
--- QBX Badger Bridge: Client-side script for job selection and notifications
+-- Handles the ox_lib menu for job selection and dynamic notifications
 
 --------------------------------------------------------------------------------
--- Wait for Config to Load
+-- Initialization
 --------------------------------------------------------------------------------
 Citizen.CreateThread(function()
+    -- Wait until the Config table is ready
     while Config == nil do
         Citizen.Wait(100)
     end
 
     if Config.Debug then
-        print(('^2[%s] Config loaded. Initializing client script.^7'):format(GetCurrentResourceName()))
+        print(('^2[qbx_badger_bridge] Config loaded. Initializing client script.^7'))
     end
 end)
 
 --------------------------------------------------------------------------------
--- Safe ShowContext Function
+-- Register Commands
 --------------------------------------------------------------------------------
-local function SafeShowContext(data)
-    Citizen.CreateThread(function()
-        while not exports.ox_lib or not exports.ox_lib.showContext do
-            Citizen.Wait(100)
-        end
-        exports.ox_lib:showContext(data)
-    end)
-end
-
---------------------------------------------------------------------------------
--- Command: Open Job Menu
---------------------------------------------------------------------------------
+-- Command to open the job selection menu
 RegisterCommand(Config.Commands.jobsMenu, function()
+    -- Request the player's current list of jobs from the server
     TriggerServerEvent('qbx_badger_bridge:server:getJobs')
 end, false)
 
 --------------------------------------------------------------------------------
--- Event: Receive Jobs from Server and Build Menu
+-- Event: Receive Jobs from Server
 --------------------------------------------------------------------------------
 RegisterNetEvent('qbx_badger_bridge:client:receiveJobs', function(jobs)
     local options = {}
 
+    -- Check if the player has any jobs
     if not jobs or #jobs == 0 then
         table.insert(options, {
             title = "No Jobs",
@@ -46,14 +38,17 @@ RegisterNetEvent('qbx_badger_bridge:client:receiveJobs', function(jobs)
             icon = "fa-solid fa-circle-xmark"
         })
     else
+        -- Build options for each job
         for i, jobData in ipairs(jobs) do
-            local is_active = (i == 1) -- First job is active
+            -- The first job in the list is always the active one
+            local is_active = (i == 1)
 
             table.insert(options, {
-                title = jobData.label or jobData.name or "Unknown Job",
-                description = "Grade: " .. (jobData.grade.name or tostring(jobData.grade)),
+                title = jobData.label,
+                description = "Grade: " .. jobData.grade.name,
                 icon = is_active and "fa-solid fa-check" or "fa-solid fa-briefcase",
                 onSelect = function()
+                    -- If the job is not already active, set it
                     if not is_active then
                         TriggerServerEvent('qbx_badger_bridge:server:setActiveJob', jobData.name)
                     end
@@ -62,15 +57,14 @@ RegisterNetEvent('qbx_badger_bridge:client:receiveJobs', function(jobs)
         end
     end
 
-    if #options > 0 then
-        SafeShowContext({
-            title = "Select Active Job",
+    -- Display the menu using ox_lib
+    if exports.ox_lib and exports.ox_lib.showContext then
+        exports.ox_lib:showContext({
+            title = 'Select Active Job',
             options = options
         })
     else
-        if Config.Debug then
-            print("^1[QBX Badger Bridge] No jobs available to show.^7")
-        end
+        print("^1[qbx_badger_bridge] ox_lib showContext export not found.^7")
     end
 end)
 
@@ -78,20 +72,19 @@ end)
 -- Event: Notifications
 --------------------------------------------------------------------------------
 RegisterNetEvent('qbx_badger_bridge:client:Notify', function(message, type)
-    if Config.NotificationSystem == 'none' then return end
-
-    if Config.NotificationSystem == 'crm-hud' then
-        if exports['crm-hud'] and exports['crm-hud'].crm_notify then
-            exports['crm-hud']:crm_notify(message, 5000, 'crm-primary', 'fa-solid fa-circle-info')
-        end
-
+    if Config.NotificationSystem == 'none' then
+        return
+    elseif Config.NotificationSystem == 'crm-hud' then
+        exports['crm-hud']:crm_notify(message, 5000, 'crm-primary', 'fa-solid fa-circle-info')
     elseif Config.NotificationSystem == 'ox_lib' then
         if exports.ox_lib and exports.ox_lib.notify then
             exports.ox_lib.notify({
-                title = "Job Sync",
+                title = 'Job Sync',
                 description = message,
                 type = type
             })
+        else
+            print("^1[qbx_badger_bridge] ox_lib notify export not found.^7")
         end
     end
 end)
