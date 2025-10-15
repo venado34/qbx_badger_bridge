@@ -1,21 +1,28 @@
 -- client.lua
--- Handles the ox_lib menu for job selection and dynamic notifications.
+-- Handles the job selection UI (ox_lib) and notifications.
 
 Citizen.CreateThread(function()
-    -- Wait until the Config table is ready.
+    -- Wait until the Config table is ready
     while Config == nil do
         Citizen.Wait(100)
     end
 
-    if Config.Debug then print(('^2[%s] Config is ready. Initializing client script.^7'):format(GetCurrentResourceName())) end
+    if Config.Debug then
+        print(('^2[%s] Config is ready. Initializing client script.^7'):format(GetCurrentResourceName()))
+    end
 
-    -- Register the command to open the job selection menu.
+    --------------------------------------------------------------------------------
+    -- Commands
+    --------------------------------------------------------------------------------
+    -- Open the job selection menu
     RegisterCommand(Config.Commands.jobsMenu, function()
-        -- Ask the server for the player's current list of jobs.
         TriggerServerEvent('qbx_badger_bridge:server:getJobs')
     end, false)
 
-    -- Event handler to receive the job list from the server and build the ox_lib menu.
+    --------------------------------------------------------------------------------
+    -- Events
+    --------------------------------------------------------------------------------
+    -- Receive job list from the server and show the ox_lib context menu
     RegisterNetEvent('qbx_badger_bridge:client:receiveJobs', function(jobs)
         local options = {}
 
@@ -27,14 +34,12 @@ Citizen.CreateThread(function()
             })
         else
             for i, jobData in ipairs(jobs) do
-                local is_active = (i == 1) -- The first job in the list is always the active one.
-
+                local is_active = (i == 1) -- The first job is always active
                 table.insert(options, {
                     title = jobData.label,
                     description = "Grade: " .. jobData.grade.name,
                     icon = is_active and "fa-solid fa-check" or "fa-solid fa-briefcase",
                     onSelect = function()
-                        -- If the job is not already active, send the event to the server to change it.
                         if not is_active then
                             TriggerServerEvent('qbx_badger_bridge:server:setActiveJob', jobData.name)
                         end
@@ -49,14 +54,12 @@ Citizen.CreateThread(function()
         })
     end)
 
-    -- Notification event handler.
+    -- Notifications
     RegisterNetEvent('qbx_badger_bridge:client:Notify', function(message, type)
         if Config.NotificationSystem == 'none' then
             return
-            
         elseif Config.NotificationSystem == 'crm-hud' then
-            exports['crm-hud']:crm_notify(text, 5000, 'crm-primary', 'fa-solid fa-circle-info')
-                
+            exports['crm-hud']:crm_notify(message, 5000, 'crm-primary', 'fa-solid fa-circle-info')
         elseif Config.NotificationSystem == 'ox_lib' then
             if exports.ox_lib and exports.ox_lib.notify then
                 exports.ox_lib.notify({
