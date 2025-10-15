@@ -10,8 +10,10 @@ files {
     'lib/LemonUI.FiveM.dll'
 }
 
+shared_script 'config/config.lua'
+
 server_scripts {
-    'config.lua',
+    'config/jobs.lua',
     'server.lua'
 }
 
@@ -22,5 +24,5 @@ client_scripts {
 
 dependencies {
     'qbx_core',
-    'honeybadger-resource'
+    'honeybadger-resource',
 }

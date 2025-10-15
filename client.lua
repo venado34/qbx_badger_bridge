@@ -1,15 +1,13 @@
 -- client.lua
 -- Handles the LemonUI menu for job selection and dynamic notifications.
 
--- Wait a moment for all resources to be fully loaded and exports to be ready.
 Citizen.CreateThread(function()
-    Citizen.Wait(1000)
-
-    -- Check if the LemonUI export is available from the loaded DLL.
-    if not exports.LemonUI then
-        print(('^1[%s] LemonUI export was not found! The job menu will not work. Ensure LemonUI.FiveM.dll is in the lib folder and loaded in the manifest.^7'):format(GetCurrentResourceName()))
-        return
+    -- Wait until both the Config table and LemonUI are ready.
+    while Config == nil or exports.LemonUI == nil do
+        Citizen.Wait(100)
     end
+
+    if Config.Debug then print(('^2[%s] Config and LemonUI are ready. Initializing client script.^7'):format(GetCurrentResourceName())) end
     local LemonUI = exports.LemonUI
 
     -- Create the LemonUI menu and object pool.
@@ -48,7 +46,7 @@ Citizen.CreateThread(function()
         end
     end)
 
-    -- Notification event handler.
+    -- Dynamic notification event handler.
     RegisterNetEvent('qbx_badger_bridge:client:Notify', function(message, type)
         if Config.NotificationSystem == 'crm-hud' then
             if exports['crm-hud'] and exports['crm-hud'].crm_notify then
@@ -67,19 +65,17 @@ Citizen.CreateThread(function()
                     color = 'crm-warning'
                 end
                 exports['crm-hud']:crm_notify(message, time, color, icon)
-            else
-                print(('^1[%s] crm-hud is not available! Please check your configuration.^7'):format(GetCurrentResourceName()))
             end
         elseif Config.NotificationSystem == 'ox_lib' then
             if exports.ox_lib and exports.ox_lib.notify then
                 exports.ox_lib.notify({
                     title = 'Job Sync',
                     description = message,
-                    type = type -- 'success', 'error', 'inform'
+                    type = type
                 })
-            else
-                print(('^1[%s] ox_lib is not available! Please check your configuration.^7'):format(GetCurrentResourceName()))
             end
+        elseif config.NotificationSystem == 'none' then
+            showBaseNotification(text)
         end
     end)
 
