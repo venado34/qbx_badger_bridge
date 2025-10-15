@@ -1,151 +1,166 @@
-# QBX Badger Bridge ⚡
-[![FiveM](https://img.shields.io/badge/FiveM-Compatible-brightgreen)](https://fivem.net/)
-[![Lua](https://img.shields.io/badge/Lua-5.4-blue)](https://www.lua.org/)
+# QBX Badger Bridge (Discord Job Sync)
 
-Automatically synchronizes a player's in-game QBX jobs with their Discord roles, featuring **multi-job support** and a clean **ox_lib UI** for selecting active jobs.
+[![Version](https://img.shields.io/badge/version-2.0.0-blue)](https://github.com/yourusername/qbx_badger_bridge)
+[![Dependencies](https://img.shields.io/badge/dependencies-QBX_Core%2C%20Honeybadger%2C%20ox_lib-lightgrey)](https://github.com/venado34/qbx_core)
+
+QBX Badger Bridge automatically synchronizes a player's in-game jobs on a FiveM server with their **Discord roles**, supporting multi-job systems and a clean **ox_lib-based UI**.
 
 ---
 
 ## Table of Contents
-- [Features](#features)
-- [Dependencies](#dependencies)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [RankedJobs Priority](#rankedjobs-priority)
-- [Usage](#usage)
-- [Staff Procedures](#staff-procedures)
+
+- [Features](#features)  
+- [Dependencies](#dependencies)  
+- [Installation](#installation)  
+- [Configuration](#configuration)  
+- [Character System Support](#character-system-support)  
+- [Commands & Usage](#commands--usage)  
+- [Debugging](#debugging)  
+- [How It Works](#how-it-works)  
 
 ---
 
 ## Features
-- **Automatic Job Sync:** Updates jobs when players load their character.  
-- **Manual Sync Command:** Admin-only `/syncjobs` command to force update.  
-- **Multi-Job Support:** Players can hold multiple jobs at once.  
-- **Active Job Selection UI:** Uses `ox_lib` context menu to choose your active job.  
-- **Configurable Notifications:** Supports `crm-hud`, `ox_lib`, or no notifications.  
-- **Priority-Based Roles:** Highest-priority Discord roles determine job grade.
+
+- **Automatic Synchronization:** Updates in-game jobs based on Discord roles whenever a player loads their character.  
+- **Multi-Job Support:** Assigns multiple jobs simultaneously with priority rankings.  
+- **Configurable Character System:** Supports `crm-multicharacter`, `QBCore`, or any custom server event.  
+- **Admin Controls:** `/syncjobs` command allows authorized staff to manually synchronize jobs.  
+- **Player UI:** `/jobs` opens an **ox_lib context menu** to view and select active jobs.  
+- **Detailed Debug Logs:** Fully configurable debug output to track job assignment and sync events.  
 
 ---
 
 ## Dependencies
-This resource requires the following to function:
 
-- [QBX-Core (Multi-Job Fork)](https://github.com/venado34/qbx_core) – Core framework supporting multiple jobs.  
-- [Honeybadger Resource](https://gitlab.nerdyjohnny.com/fivem/resources/essentials/owenbadger/honeybadger-resource) – Fetches Discord roles.  
-- [ox_lib](https://github.com/overextended/ox_lib) – Handles context menu and optional notifications.  
-- [crm-multicharacter](https://github.com/project-crm/crm-multicharacter) – Triggers automatic job sync on character load.
+This resource requires the following:
+
+- **[QBX-Core (Multi-Job Fork)](https://github.com/venado34/qbx_core)** – supports multiple jobs per player.  
+- **[Honeybadger Resource](https://gitlab.nerdyjohnny.com/fivem/resources/essentials/owenbadger/honeybadger-resource)** – fetches Discord roles.  
+- **[ox_lib](https://github.com/overextended/ox_lib)** – for job menu UI and optional notifications.  
+- **[crm-multicharacter](https://github.com/project-crm/crm-multicharacter)** – used for automatic job sync (configurable).  
 
 ---
 
 ## Installation
 
-1. **Ensure Dependencies:** Confirm all required resources are installed.  
-2. **Modify Honeybadger Resource (Required):**  
-   Add this export at the end of `honeybadger-resource/server.lua`:
-   ```lua
-   exports('GetPlayerRoles', function(playerId, callback)
-       local discord_id = nil
-       for _, id in ipairs(GetPlayerIdentifiers(playerId)) do
-           if string.match(id, "^discord:") then
-               discord_id = string.gsub(id, "discord:", "")
-               break
-           end
-       end
-       if not discord_id then
-           if callback then callback(nil) end
-           return
-       end
-       PerformHttpRequest(("%s/user/%s.json"):format(honeybadger_url, discord_id), function(code, response)
-           if code ~= 200 or not response or response == "" then
-               if callback then callback(nil) end
-               return
-           end
-           local ok, decoded = pcall(json.decode, response)
-           if not ok or type(decoded) ~= "table" then
-               if callback then callback(nil) end
-               return
-           end
-           if callback then callback(decoded) end
-       end)
-   end)
+1. Ensure all dependencies are installed and working.  
+2. **Modify Honeybadger** to add the export `GetPlayerRoles` (see [Installation Section](#installation) in previous docs).  
+3. Place `qbx_badger_bridge` in your `resources` folder.  
+4. Add to `server.cfg` **after dependencies**:  
+
+```cfg
+ensure qbx_core
+ensure honeybadger-resource
+ensure ox_lib
+ensure qbx_badger_bridge
 ````
-
-3. **Install Resource:**
-
-   * Place `qbx_badger_bridge` folder into your `resources` directory.
-   * Add `ensure qbx_badger_bridge` to your `server.cfg`, **after dependencies**.
 
 ---
 
 ## Configuration
 
-### `config/config.lua`
+All configuration is in `config/config.lua`:
 
 ```lua
-Config.Debug = true -- Toggle detailed server logs
-Config.NotificationSystem = 'crm-hud' -- Options: 'crm-hud', 'ox_lib', 'none'
+Config = {}
 
+-- Debug
+Config.Debug = true
+
+-- Notification system: 'crm-hud', 'ox_lib', or 'none'
+Config.NotificationSystem = 'ox_lib'
+
+-- Commands
 Config.Commands = {
-    jobsMenu = "jobs",    -- Player command to open job menu
-    syncJobs = "syncjobs" -- Admin command for manual sync
+    jobsMenu = "jobs",
+    syncJobs = "syncjobs"
 }
 
-Config.AdminPermissions = {
-    "admin",
-    "mod"
-}
+-- Admin ACE permissions
+Config.AdminPermissions = {"admin", "mod"}
+
+-- Server event fired when a player has loaded their character
+Config.CharacterLoadedEvent = 'crm-multicharacter:server:playerLoaded'
 ```
 
-### `config/jobs.lua`
+### Jobs Table
 
-* Contains the `RankedJobs` table mapping **Discord roles → QBX jobs & grades**.
-* **Order matters**: highest-priority roles must appear first per job.
+`config/jobs.lua` contains `RankedJobs` mapping Discord roles to in-game jobs and grades.
+
+* **Order matters:** Highest priority roles must be listed first for each job.
+* Supports single-rank side jobs and multi-rank department jobs.
 
 ---
 
-## RankedJobs Priority
+## Character System Support
 
-* For each unique job (e.g., `police`, `dps`), the first matching Discord role determines the assigned grade.
-* Multi-job support allows secondary jobs with single-rank positions.
+This resource can automatically detect your character system via `Config.CharacterLoadedEvent`.
+
 * Example:
 
 ```lua
-RankedJobs = {
-    { roleName = "LSPD Chief", job = "police", grade = 11 },
-    { roleName = "LSPD Officer", job = "police", grade = 2 },
-    { roleName = "LSPD MCIU", job = "lspd_mciu", grade = 0 },
-}
+RegisterNetEvent(Config.CharacterLoadedEvent, function()
+    local src = source
+    local Player = GetPlayer(src) -- QBX or QBCore
+    if Player then
+        -- Automatic job synchronization
+        SyncPlayerJobs(src, false)
+    else
+        print("^1[QBX Badger Bridge] No compatible character system detected. Automatic sync disabled.^7")
+    end
+end)
 ```
 
----
+Supported examples:
 
-## Usage
-
-* **Player Job Menu:** `/jobs` → Opens ox_lib menu to select active job.
-* **Admin Manual Sync:** `/syncjobs [playerID]` → Forces Discord role synchronization.
-* **Notifications:** Configurable via `Config.NotificationSystem`.
+* `crm-multicharacter:server:playerLoaded`
+* `QBCore:Server:OnPlayerLoaded`
+* Custom events can be set in `Config.CharacterLoadedEvent`.
 
 ---
 
-## Staff Procedures
+## Commands & Usage
 
-### Promotions / Demotions
+| Command     | Description                                                             |
+| ----------- | ----------------------------------------------------------------------- |
+| `/jobs`     | Opens the **ox_lib job selection menu** for players.                    |
+| `/syncjobs` | Admin-only command to manually sync a player's jobs with Discord roles. |
 
-* Discord is the **single source of truth**.
-* **To assign or promote a player:** Give them the corresponding Discord role.
-* **To remove or demote:** Remove the role in Discord.
-* Changes are applied automatically on next login or via `/syncjobs`.
+**Notes:**
 
-### Active Job Changes
-
-* Players can choose their active job via the ox_lib menu (`/jobs`).
-* Multi-job players can switch active jobs without affecting stored grades.
+* Active job is always the first in the list by default.
+* Changing jobs via `/setjob` will be overwritten on next sync.
 
 ---
 
-## License
+## Debugging
 
-MIT © Venado
+* Set `Config.Debug = true` to enable detailed console logs for both client and server.
+* Check for ox_lib issues: `"No context menu of such id found"` or `"export not found"` usually means ox_lib is not loaded before QBX Badger Bridge.
+* Use `Config.NotificationSystem = 'ox_lib'` to see in-game debug messages.
+
+---
+
+## How It Works
+
+1. Player loads character.
+2. Server fetches Discord roles via Honeybadger.
+3. Jobs are compared against `RankedJobs`:
+
+   * Assign new jobs
+   * Update existing grades
+   * Remove unmatched jobs
+4. Player receives optional notifications.
+5. Player can open `/jobs` menu to select an active job.
+
+**Promotions & Demotions:**
+
+* Manage all roles **via Discord**.
+* In-game promotions or demotions are temporary; the next sync will align jobs to Discord roles.
+
+---
+
+*Maintained by Venado | Version 2.0.1*
 
 ```
-
