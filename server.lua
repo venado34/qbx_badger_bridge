@@ -1,23 +1,16 @@
 -- server.lua
 -- QBX Badger Bridge (Discord Job Sync)
--- Manually syncs Discord roles to in-game jobs for a multi-job enabled QBX-Core server.
+-- Automatically and manually syncs roles, and supports a UI for job selection.
 
---------------------------------------------------------------------------------
--- Configuration
---------------------------------------------------------------------------------
-Config = {}
-Config.Debug = true -- Set to true to enable detailed console logs.
-Config.SyncPermission = "admin" -- The ACE permission required to use the /syncjobs command.
+-- NOTE: This script now uses the settings defined in config/config.lua
 
 --------------------------------------------------------------------------------
 -- Helper Functions
 --------------------------------------------------------------------------------
--- Gets the Player object from QBX-Core.
 local function GetPlayer(source)
     return exports['qbx_core']:GetPlayer(source)
 end
 
--- Converts a list of roles into a lookup table.
 local function ConvertRolesToLookupTable(roleList)
     local lookup = {}
     if type(roleList) ~= "table" then return lookup end
@@ -28,22 +21,22 @@ local function ConvertRolesToLookupTable(roleList)
 end
 
 --------------------------------------------------------------------------------
--- Core Synchronization Logic 
+-- Core Synchronization Logic
 --------------------------------------------------------------------------------
-local function SyncPlayerJobs(playerSource)
+local function SyncPlayerJobs(playerSource, isManual)
     local Player = GetPlayer(playerSource)
     if not Player then return end
 
-    if Config.Debug then print(('[%s][DEBUG] Manual sync started for source: %s. Fetching roles.'):format(GetCurrentResourceName(), playerSource)) end
-    TriggerClientEvent('ox_lib:notify', playerSource, { title = "Job Sync", description = "Starting synchronization with Discord...", type = "inform" })
+    if isManual and Config.Debug then 
+        print(('[%s][DEBUG] Manual sync started for source: %s.'):format(GetCurrentResourceName(), playerSource))
+        TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource, "Starting manual synchronization...", "primary")
+    end
 
-    -- Fetch Discord roles from Honeybadger resource.
     exports['honeybadger-resource']:GetPlayerRoles(playerSource, function(roleList)
         local discordRoles = ConvertRolesToLookupTable(roleList)
         
-        if Config.Debug then print(('[%s][DEBUG] Received and processed roles for source %s: %s'):format(GetCurrentResourceName(), playerSource, json.encode(discordRoles))) end
+        if Config.Debug then print(('[%s][DEBUG] Received roles for source %s: %s'):format(GetCurrentResourceName(), playerSource, json.encode(discordRoles))) end
 
-        -- Part 1: Determine all jobs the player SHOULD have.
         local shouldHaveJobs = {}
         for _, jobData in ipairs(RankedJobs) do
             if discordRoles[jobData.roleName] then
@@ -53,7 +46,6 @@ local function SyncPlayerJobs(playerSource)
             end
         end
 
-        -- Part 2: Get a list of jobs the player CURRENTLY has.
         local currentlyHasJobs = {}
         if Player.PlayerData.jobs and type(Player.PlayerData.jobs) == "table" then
             for _, jobData in ipairs(Player.PlayerData.jobs) do
@@ -61,66 +53,74 @@ local function SyncPlayerJobs(playerSource)
             end
         end
 
-        -- Part 3: Add or Update jobs.
+        local changesMade = false
         for jobName, jobGrade in pairs(shouldHaveJobs) do
             if currentlyHasJobs[jobName] ~= jobGrade then
                 Player.Functions.SetJob(jobName, jobGrade)
-                TriggerClientEvent('ox_lib:notify', playerSource, { title = "Job Sync", description = ('Assigned/Updated job: %s'):format(jobName), type = "success" })
+                if isManual then TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource, ('Assigned/Updated job: %s'):format(jobName), "success") end
+                changesMade = true
             end
         end
 
-        -- Part 4: Remove jobs the player no longer has roles for.
         for jobName, _ in pairs(currentlyHasJobs) do
             if not shouldHaveJobs[jobName] then
                 Player.Functions.RemoveJob(jobName)
-                TriggerClientEvent('ox_lib:notify', playerSource, { title = "Job Sync", description = ('Removed job: %s'):format(jobName), type = "error" })
+                if isManual then TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource, ('Removed job: %s'):format(jobName), "error") end
+                changesMade = true
             end
         end
 
-        -- NEW: Save the player's data to the database.
-        Player.Functions.Save()
-        if Config.Debug then print(('[%s][DEBUG] Player data saved for source %s.'):format(GetCurrentResourceName(), playerSource)) end
+        if changesMade then
+            Player.Functions.Save()
+            if Config.Debug then print(('[%s][DEBUG] Player data saved for source %s.'):format(GetCurrentResourceName(), playerSource)) end
+        end
         
-        if Config.Debug then print(('[%s][DEBUG] Job sync complete for source %s.'):format(GetCurrentResourceName(), playerSource)) end
-        TriggerClientEvent('ox_lib:notify', playerSource, { title = "Job Sync", description = "Synchronization with Discord is complete and saved!", type = "success" })
+        if isManual then
+            if Config.Debug then print(('[%s][DEBUG] Job sync complete for source %s.'):format(GetCurrentResourceName(), playerSource)) end
+            TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource, "Synchronization complete!", "success")
+        end
     end)
 end
 
 --------------------------------------------------------------------------------
--- Commands
+-- Triggers for Synchronization
 --------------------------------------------------------------------------------
-RegisterCommand("syncjobs", function(source, args, rawCommand)
-    if not IsPlayerAceAllowed(source, Config.SyncPermission) then
-        TriggerClientEvent('ox_lib:notify', source, { title = "Permission Denied", description = "You are not authorized to use this command.", type = "error" })
+-- AUTOMATIC: Triggered when a player loads their character.
+RegisterNetEvent('crm-multicharacter:server:playerLoaded', function()
+    local source = source
+    if Config.Debug then print(('[%s][DEBUG] Automatic sync triggered for source: %s.'):format(GetCurrentResourceName(), source)) end
+    SyncPlayerJobs(source, false) -- isManual is false
+end)
+
+-- MANUAL: Command to trigger the job sync for admins.
+-- The command name is now controlled by Config.Commands.syncJobs
+RegisterCommand(Config.Commands.syncJobs, function(source, args, rawCommand)
+    if not IsPlayerAceAllowed(source, Config.AdminPermission) then
+        TriggerClientEvent('qbx_badger_bridge:client:Notify', source, "You are not authorized to use this command.", "error")
         return
     end
-    SyncPlayerJobs(source)
-end, false)
+    SyncPlayerJobs(source, true) -- isManual is true
+end, true) -- Set restricted to true
 
-RegisterCommand("myjobs", function(source, args, rawCommand)
+--------------------------------------------------------------------------------
+-- Server Events for Client UI
+--------------------------------------------------------------------------------
+-- Event for the client to request the player's job list.
+RegisterNetEvent('qbx_badger_bridge:server:getJobs', function()
+    local source = source
+    local Player = GetPlayer(source)
+    if not Player then return end
+    TriggerClientEvent('qbx_badger_bridge:client:receiveJobs', source, Player.PlayerData.jobs)
+end)
+
+-- Event for the client to set a new active job.
+RegisterNetEvent('qbx_badger_bridge:server:setActiveJob', function(jobName)
+    local source = source
     local Player = GetPlayer(source)
     if not Player then return end
 
-    if not Player.PlayerData.jobs or #Player.PlayerData.jobs == 0 then
-        TriggerClientEvent('ox_lib:notify', source, { title = "Your Jobs", description = "You have no jobs assigned.", type = "inform" })
-        return
-    end
-
-    local jobList = {}
-    for _, jobData in ipairs(Player.PlayerData.jobs) do
-        table.insert(jobList, string.format("%s (%s)", jobData.label, jobData.grade.name))
-    end
-
-    TriggerClientEvent('ox_lib:notify', source, { title = "Your Jobs", description = table.concat(jobList, "<br>"), type = "inform" })
-end, false)
-
-RegisterCommand("setactivejob", function(source, args, rawCommand)
-    local Player = GetPlayer(source)
-    if not Player then return end
-
-    local jobName = args[1]
     if not jobName then
-        TriggerClientEvent('ox_lib:notify', source, { title = "Invalid Usage", description = "Please specify a job name. Usage: /setactivejob [job_name]", type = "error" })
+        TriggerClientEvent('qbx_badger_bridge:client:Notify', source, "Invalid job name specified.", "error")
         return
     end
 
@@ -135,7 +135,7 @@ RegisterCommand("setactivejob", function(source, args, rawCommand)
     if hasJob then
         Player.Functions.SetActiveJob(jobName)
     else
-        TriggerClientEvent('ox_lib:notify', source, { title = "Job Not Found", description = "You do not have that job.", type = "error" })
+        TriggerClientEvent('qbx_badger_bridge:client:Notify', source, "You do not have that job.", "error")
     end
-end, false)
+end)
 
