@@ -13,7 +13,14 @@ Config.Debug = true
 -- 'crm-hud' -> Uses CRM-HUD notifications
 -- 'ox_lib'  -> Uses ox_lib notify system
 -- 'none'    -> Disables notifications entirely
-Config.NotificationSystem = 'ox_lib'
+Config.Notifications = 'crm-hud'
+
+--------------------------------------------------------------------------------
+-- Multicharacter System
+--------------------------------------------------------------------------------
+-- Server event fired when a player has loaded their character
+-- Used to trigger the automatic job sync
+Config.Multicharacter = 'crm-multicharacter'
 
 --------------------------------------------------------------------------------
 -- Commands
@@ -35,10 +42,4 @@ Config.AdminPermissions = {
     "mod",
 }
 
---------------------------------------------------------------------------------
--- Character Loaded Event
---------------------------------------------------------------------------------
--- Server event fired when a player has loaded their character
--- Used to trigger the automatic job sync
--- Examples: 'crm-multicharacter:server:playerLoaded', 'QBCore:Server:OnPlayerLoaded'
-Config.CharacterLoadedEvent = 'crm-multicharacter:server:playerLoaded'
+
