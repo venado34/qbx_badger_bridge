@@ -48,6 +48,10 @@ Citizen.CreateThread(function()
 
     -- Dynamic notification event handler.
     RegisterNetEvent('qbx_badger_bridge:client:Notify', function(message, type)
+        if Config.NotificationSystem == 'none' then
+            return
+        end
+        
         if Config.NotificationSystem == 'crm-hud' then
             if exports['crm-hud'] and exports['crm-hud'].crm_notify then
                 local time = 5000 
@@ -74,8 +78,6 @@ Citizen.CreateThread(function()
                     type = type
                 })
             end
-        elseif config.NotificationSystem == 'none' then
-            showBaseNotification(text)
         end
     end)
 
