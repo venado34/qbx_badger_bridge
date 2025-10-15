@@ -1,12 +1,13 @@
 -- server.lua
 -- QBX Badger Bridge (Discord Job Sync)
--- Automatically and manually syncs roles, and supports a UI for job selection.
 
--- Wait until the config files have loaded.
+-- Wait until the config files have loaded before proceeding.
 Citizen.CreateThread(function()
-    while Config == nil do
+    while Config == nil or RankedJobs == nil do
         Citizen.Wait(100)
     end
+    
+    if Config.Debug then print(('^2[%s] Config and jobs loaded. Initializing server script.^7'):format(GetCurrentResourceName())) end
     
     --------------------------------------------------------------------------------
     -- Helper Functions
