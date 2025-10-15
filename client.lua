@@ -43,14 +43,13 @@ Citizen.CreateThread(function()
             end
         end
 
-        -- Show the context menu to the player.
-        exports.ox_lib:showContext('job_selector_menu', {
+        exports.ox_lib:showContext({
             title = 'Select Active Job',
             options = options
         })
     end)
 
-    -- Dynamic notification event handler (unchanged).
+    -- Notification event handler.
     RegisterNetEvent('qbx_badger_bridge:client:Notify', function(message, type)
         if Config.NotificationSystem == 'none' then
             return
