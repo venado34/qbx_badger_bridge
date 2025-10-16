@@ -16,25 +16,31 @@ end
 -- Notifications (Modular)
 --------------------------------------------------------------------------------
 RegisterNetEvent('qbx_badger_bridge:client:Notify', function(message, type)
-    if Config.Notifications == 'none' then return end
+    if Config.Notifications == 'none' then
+        return
 
-    if Config.Notifications == 'crm-hud' then
-        exports['crm-hud']:crm_notify(message, 5000, 'crm-primary', 'fa-solid fa-circle-info')
+    elseif Config.Notifications == 'crm-hud' then
+        if exports['crm-hud'] and exports['crm-hud'].crm_notify then
+            exports['crm-hud']:crm_notify(message, 5000, 'crm-primary', 'fa-solid fa-circle-info')
+        else
+            print('^1[QBX Badger Bridge] crm-hud notify not found.^7')
+        end
 
     elseif Config.Notifications == 'ox_lib' then
-        if exports.ox_lib and exports.ox_lib.notify then
-            exports.ox_lib:notify({
+        if lib and lib.notify then
+            lib.notify({
                 title = 'Job Sync',
                 description = message,
-                type = type
+                type = type or 'inform'
             })
         else
-            debug('ox_lib.notify not found')
+            print('^1[QBX Badger Bridge] ox_lib notify not found.^7')
         end
-    end
-end)
 
---------------------------------------------------------------------------------
+    elseif Config.Debug then
+        print(('[DEBUG][Notification] %s (%s)'):format(message, type or 'info'))
+    end
+end)------------------------------------------------------------------------------
 -- Context Menu for Jobs (ox_lib)
 --------------------------------------------------------------------------------
 local function OpenJobMenu()
