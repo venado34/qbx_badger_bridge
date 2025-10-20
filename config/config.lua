@@ -5,12 +5,11 @@ Config.Debug = true
 --------------------------------------------------------------------------------
 -- Character System
 -- Options:
--- 'qbx_core'          => QBX-Core native character system
+-- 'qbx_core'           => QBX-Core native character system
 -- 'crm-multicharacter' => CRM-Multicharacter system
--- 'custom'            => Custom character system (requires manual event setup)
--- 'none'              => No automatic job sync
+-- 'none'               => No automatic job sync
 --------------------------------------------------------------------------------
-Config.Multicharacter = 'crm-multicharacter'
+Config.Multicharacter = 'qbx_core'
 
 --------------------------------------------------------------------------------
 -- Notifications System
@@ -34,6 +33,13 @@ Config.AdminPermissions = {
 -- All commands are configurable here
 --------------------------------------------------------------------------------
 Config.Commands = {
-    jobs = 'jobs',          -- Opens the job selection menu
-    syncJobs = 'syncjobs',  -- Manually syncs player jobs
+    jobs = 'jobs',                  -- Opens the job selection menu
+    syncJobs = 'syncjobs',          -- Manually syncs player jobs
+    resyncAll = 'bridge_resyncall', -- admin: sync all online players
 }
+
+--------------------------------------------------------------------------------
+-- Save delay (milliseconds)
+-- Controls how long the script waits before saving player data after assigning/removing jobs.
+--------------------------------------------------------------------------------
+Config.SaveDelay = 1000 -- Default: 1000 ms (1 second).

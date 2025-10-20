@@ -16,16 +16,16 @@ end
 -- Notifications (Modular)
 --------------------------------------------------------------------------------
 RegisterNetEvent('qbx_badger_bridge:client:Notify', function(message, type)
-    if Config.Notifications == 'none' then
-        return
+    debug(("Notification triggered: %s (%s)"):format(message, type or 'info'))
 
-    elseif Config.Notifications == 'crm-hud' then
+    if Config.Notifications == 'none' then return end
+
+    if Config.Notifications == 'crm-hud' then
         if exports['crm-hud'] and exports['crm-hud'].crm_notify then
-            exports['crm-hud']:crm_notify(message, 5000, 'crm-primary', 'fa-solid fa-circle-info')
+            exports['crm-hud']:crm_notify(message, 10000, 'crm-primary', 'fa-solid fa-circle-info')
         else
-            print('^1[QBX Badger Bridge] crm-hud notify not found.^7')
+            debug("crm-hud notify not found")
         end
-
     elseif Config.Notifications == 'ox_lib' then
         if lib and lib.notify then
             lib.notify({
@@ -34,16 +34,22 @@ RegisterNetEvent('qbx_badger_bridge:client:Notify', function(message, type)
                 type = type or 'inform'
             })
         else
-            print('^1[QBX Badger Bridge] ox_lib notify not found.^7')
+            debug("ox_lib notify not found")
         end
-
     elseif Config.Debug then
         print(('[DEBUG][Notification] %s (%s)'):format(message, type or 'info'))
     end
-end)------------------------------------------------------------------------------
+end)
+
+--------------------------------------------------------------------------------
 -- Context Menu for Jobs (ox_lib)
 --------------------------------------------------------------------------------
 local function OpenJobMenu()
+    if not exports.ox_lib or not exports.ox_lib.showContext then
+        print("^1[QBX Badger Bridge] ox_lib showContext export not found.^7")
+        return
+    end
+
     local menuItems = {}
     for jobName, grade in pairs(PlayerJobs) do
         table.insert(menuItems, {
@@ -55,11 +61,14 @@ local function OpenJobMenu()
     end
 
     if #menuItems == 0 then
-        debug("No jobs available to display in menu")
+        print("^3[QBX Badger Bridge] No jobs available to display in menu.^7")
         return
     end
 
-    exports.ox_lib:showContext('qbx_jobs_menu', menuItems)
+    exports.ox_lib:showContext({
+        title = "Select Active Job",
+        options = menuItems
+    })
 end
 
 --------------------------------------------------------------------------------
@@ -67,15 +76,21 @@ end
 --------------------------------------------------------------------------------
 RegisterNetEvent('qbx_badger_bridge:client:receiveJobs', function(jobs)
     PlayerJobs = jobs
-    debug("Received jobs from server")
+    debug("Received jobs from server: " ..
+    table.concat((function()
+        local t = {}
+        for k, _ in pairs(jobs) do table.insert(t, k) end
+        return t
+    end)(), ", "))
 end)
 
 --------------------------------------------------------------------------------
 -- Open Job Menu Command
 --------------------------------------------------------------------------------
 RegisterCommand(Config.Commands.jobs, function()
+    debug("Jobs command triggered")
     TriggerServerEvent('qbx_badger_bridge:server:getJobs')
-    Citizen.Wait(100)
+    Citizen.Wait(200) -- slight delay to ensure jobs are received
     OpenJobMenu()
 end, false)
 
@@ -83,5 +98,6 @@ end, false)
 -- Set Active Job
 --------------------------------------------------------------------------------
 RegisterNetEvent('qbx_badger_bridge:client:setActiveJob', function(data)
+    debug(("Setting active job: %s"):format(data.jobName))
     TriggerServerEvent('qbx_badger_bridge:server:setActiveJob', data.jobName)
 end)
