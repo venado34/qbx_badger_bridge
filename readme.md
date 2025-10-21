@@ -9,16 +9,16 @@ QBX Badger Bridge synchronizes Discord roles with QBX jobs in GTA V roleplay ser
 
 ## Table of Contents
 
-* [Features](#features)
-* [Requirements](#requirements)
-* [Installation](#installation)
-* [Configuration](#configuration)
-* [Commands](#commands)
-* [How It Works](#how-it-works)
-* [Notifications](#notifications)
-* [Debugging](#debugging)
-* [Contributing](#contributing)
-* [License](#license)
+- [Features](#features)
+- [Requirements](#dependencies)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Commands](#commands)
+- [Notifications](#notifications)
+- [Debugging](#debug-output-example)
+- [How It Works](#how-it-works)
+- [Credits](#credits)
+- [License](#license)
 
 ---
 
