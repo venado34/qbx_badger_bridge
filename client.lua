@@ -62,25 +62,32 @@ local function OpenJobMenu()
     end
 
     table.sort(sortedJobs, function(a, b)
-        return a.grade > b.grade -- Highest grade first
+        return a.grade > b.grade
     end)
 
-    local menuItems = {}
+    local options = {}
     for _, job in ipairs(sortedJobs) do
-        table.insert(menuItems, {
+        table.insert(options, {
             title = job.name,
             description = "Grade: " .. tostring(job.grade),
-            event = 'qbx_badger_bridge:client:setActiveJob',
-            args = { jobName = job.name }
+            icon = 'briefcase',
+            onSelect = function()
+                TriggerServerEvent('qbx_badger_bridge:server:setActiveJob', job.name)
+            end
         })
     end
 
-    if exports.ox_lib and exports.ox_lib.showContext then
-        exports.ox_lib:showContext('qbx_jobs_menu', menuItems)
-    else
-        debug("ox_lib.showContext export not found")
-    end
+    -- Register the context menu
+    exports.ox_lib.registerContext({
+        id = 'qbx_jobs_menu',
+        title = 'My Jobs',
+        options = options
+    })
+
+    -- Show the menu
+    exports.ox_lib.showContext('qbx_jobs_menu')
 end
+
 
 --------------------------------------------------------------------------------
 -- Command: Open Job Menu
