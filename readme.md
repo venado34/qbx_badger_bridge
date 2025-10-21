@@ -9,127 +9,172 @@ QBX Badger Bridge synchronizes Discord roles with QBX jobs in GTA V roleplay ser
 
 ## Table of Contents
 
-- [Features](#features)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Commands](#commands)
-- [Notifications](#notifications)
-- [Debugging](#debugging)
-- [Contributing](#contributing)
+* [Features](#features)
+* [Requirements](#requirements)
+* [Installation](#installation)
+* [Configuration](#configuration)
+* [Commands](#commands)
+* [How It Works](#how-it-works)
+* [Notifications](#notifications)
+* [Debugging](#debugging)
+* [Contributing](#contributing)
+* [License](#license)
 
 ---
 
-## Features
+## 🌐 Features
 
-- Automatic job synchronization based on Discord roles.
-- Supports multiple character systems:
-  - `qbx_core` – QBX-Core native character system.
-  - `crm-multicharacter` – CRM-Multicharacter system.
-  - `custom` – Custom character system with a manual server event.
-  - `none` – Disable automatic sync.
-- Modular client-side notifications:
-  - `none`
-  - `crm-hud`
-  - `ox_lib`
-- Configurable commands for job menu and manual sync.
-- Detailed debug logs for troubleshooting.
+* ✅ Automatic job synchronization when a player joins (QBX or CRM Multicharacter supported)
+* 🔄 Manual job sync command for admins and developers
+* 🎛️ In-game job menu with ox_lib context menu
+* 🧠 Multi-job support — players can hold multiple jobs
+* 🧩 Discord role-based job assignment via Honeybadger
+* 💾 Automatic save delay to prevent race conditions
+* 🧰 Developer-friendly debug logging system
+* 🔔 Modular notification support (`crm-hud`, `ox_lib`, or debug print)
+* 🟢 Active job system with on-duty highlighting
 
 ---
 
-## Requirements
+## ⚙️ Dependencies
 
-- [QBX-Core](https://github.com/Qbox-project/qbx_core)
-- [Honeybadger](https://github.com/Qbox-project/honeybadger-resource)
-- [ox_lib](https://github.com/overextended/ox_lib)
-
----
-
-## Installation
-
-1. Place the resource in your server:  
-
-```
-
-resources/[qbx]/[jobs]/qbx_badger_bridge
-
-````
-
-2. Add the resource to your `server.cfg`:
-
-```cfg
-ensure qbx_badger_bridge
-````
-
-3. Configure your Discord roles, commands, and notifications in `config.lua`.
+| Dependency                          | Description                  | Link                                                 |
+| ----------------------------------- | ---------------------------- | ---------------------------------------------------- |
+| **Qbox Core**                       | Core framework               | [qbx_core](https://github.com/Qbox-project/qbx_core) |
+| **Honeybadger**                     | Discord role bridge          | —                                                    |
+| **ox_lib**                          | Context menu & notifications | [ox_lib](https://github.com/overextended/ox_lib)     |
+| **crm-hud** *(optional)*            | Notifications system         | —                                                    |
+| **crm-multicharacter** *(optional)* | Character loading event      | —                                                    |
 
 ---
 
-## Configuration
+## 🧩 Configuration
 
-All settings are in `config.lua`.
+### `config.lua`
 
 ```lua
-Config.Debug = true                       -- Toggle debug prints
-Config.Multicharacter = 'crm-multicharacter' -- Character system to use
-Config.Notifications = 'ox_lib'           -- Client-side notification system
-Config.AdminPermissions = {               -- ACE permissions for admin commands
-    "group.admin",
-    "group.superadmin"
-}
+Config = {}
+
+Config.Debug = true
+Config.Notifications = 'crm-hud'
+Config.Multicharacter = 'qbx_core'
+
 Config.Commands = {
-    jobs = 'jobs',         -- Opens the job selection menu
-    syncJobs = 'syncjobs', -- Manually sync player jobs
+    syncJobs = 'syncjobs',
+    resyncAll = 'resyncall',
+    jobs = 'jobs',
+}
+
+Config.SaveDelay = 1000
+Config.AdminPermissions = {
+    'qbx_badger_bridge.admin',
 }
 ```
 
 ---
 
-## Commands
-
-Commands are fully configurable in `config.lua`.
-
-| Command     | Description                                        |
-| ----------- | -------------------------------------------------- |
-| `/jobs`     | Opens the job selection menu (client-side)         |
-| `/syncjobs` | Manually triggers job synchronization (admin only) |
-
----
-
-## Notifications
-
-Notifications are handled client-side and can be configured in `Config.Notifications`:
-
-* `none` – No notifications.
-* `crm-hud` – Uses the CRM HUD notification system.
-* `ox_lib` – Uses `ox_lib` notifications:
+## 🧱 Ranked Jobs Example (`ranked_jobs.lua`)
 
 ```lua
-lib.notify({
-    title = 'Job Sync',
-    description = message,
-    type = type -- 'success', 'error', 'info', etc.
-})
+RankedJobs = {
+    { roleName = "K9 Coordinator", job = "k9", grade = 3 },
+    { roleName = "K9 Supervisor", job = "k9", grade = 2 },
+    { roleName = "K9 Certified", job = "k9", grade = 1 },
+    { roleName = "K9 Trainee", job = "k9", grade = 0 },
+
+    { roleName = "Department of Public Safety", job = "dps", grade = 1 },
+    { roleName = "SADOT", job = "sadot", grade = 0 },
+}
 ```
 
 ---
 
-## Debugging
+## 🕹️ Commands
 
-Enable `Config.Debug = true` for detailed logs in the server and client consoles. Logs include:
-
-* Player Discord roles.
-* Job assignments and updates.
-* Any errors when saving or assigning jobs.
-
----
-
-## Contributing
-
-Feel free to submit issues, PRs, or improvements. Please maintain the code style, comments, and modular structure.
+| Command      | Description                         | Permission           |
+| ------------ | ----------------------------------- | -------------------- |
+| `/jobs`      | Opens ox_lib job selection menu     | All players          |
+| `/syncjobs`  | Manually syncs Discord roles → jobs | Debug only           |
+| `/resyncall` | Resync all players’ jobs            | Console / Admin only |
 
 ---
 
-## License
+## 🧠 How It Works
 
-This project is licensed under MIT.
+### Flow Overview
+
+```mermaid
+flowchart LR
+    A[Discord Roles] --> B[Ranked Jobs Table]
+    B --> C[Jobs Assigned to Player]
+    C --> D[Highest Grade Selected]
+    D --> E[Active Job]
+```
+
+
+### Quick Setup Diagram
+
+```mermaid
+flowchart LR
+    P[Player Logs In] --> H[Fetch Discord Roles via Honeybadger]
+    H --> J[Server Matches Roles → Jobs → Grades]
+    J --> A[Player’s Job List Updated]
+    A --> K[Player Opens /jobs Menu]
+    K --> L[Select Active Job]
+    L --> G[Game HUD Updated / Payroll / On-Duty Status]
+```
+
+### Explanation
+
+1. **Discord Role Fetching**: Honeybadger retrieves the player’s verified Discord roles.
+2. **Role Matching**: The server script cross-references these roles against `ranked_jobs.lua`.
+3. **Job Assignment**: Each matched role is assigned as a job to the player with the corresponding grade.
+4. **Highest Grade Priority**: If multiple roles map to the same job, the **highest grade** is applied.
+5. **Job Removal**: If a role is removed from Discord, the corresponding job is removed.
+6. **Active Job Selection**: Players can open `/jobs` to select their active job.
+7. **In-Game Effects**: The active job is reflected in payroll, HUD notifications, and on-duty features.
+
+---
+
+## 🔔 Notifications
+
+* **crm-hud** → Uses custom CRM notification popups
+* **ox_lib** → Uses ox_lib’s built-in notify
+* **none** → No notifications (debug only)
+
+---
+
+## 🧩 Debug Output Example
+
+```
+[qbx_badger_bridge][DEBUG] Starting job sync for John Doe (1). Manual trigger: false
+[qbx_badger_bridge][DEBUG] Discord roles for source 1: SADOT, K9 Certified, DPS Chief of Support Services
+[qbx_badger_bridge][DEBUG] Added/Updated job k9 to grade 1 for 1
+[qbx_badger_bridge][DEBUG] Added/Updated job sadot to grade 0 for 1
+[qbx_badger_bridge][DEBUG] Player data saved for source 1.
+```
+
+---
+
+## 💡 Notes
+
+* Players can hold multiple jobs at once.
+* The **highest matching grade** from their Discord roles is always applied.
+* Automatic sync triggers on player load for supported multicharacter systems.
+* Configurable save delay prevents premature overwrites during load.
+
+---
+
+## 🧰 Credits
+
+* Developed by **Venado**
+* Based on **Qbox Framework**
+* Integrated with **Honeybadger Discord Role Sync**
+* Notifications via **ox_lib** and **crm-hud**
+
+---
+
+## 📜 License
+
+This project is licensed under the MIT License.
+See `LICENSE` for more information.
