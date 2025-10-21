@@ -22,17 +22,17 @@ QBX Badger Bridge synchronizes Discord roles with QBX jobs in GTA V roleplay ser
 
 ---
 
-## 🌐 Features
+##  Features
 
-* ✅ Automatic job synchronization when a player joins (QBX or CRM Multicharacter supported)
-* 🔄 Manual job sync command for admins and developers
-* 🎛️ In-game job menu with ox_lib context menu
-* 🧠 Multi-job support — players can hold multiple jobs
-* 🧩 Discord role-based job assignment via Honeybadger
-* 💾 Automatic save delay to prevent race conditions
-* 🧰 Developer-friendly debug logging system
-* 🔔 Modular notification support (`crm-hud`, `ox_lib`, or debug print)
-* 🟢 Active job system with on-duty highlighting
+*  Automatic job synchronization when a player joins (QBX or CRM Multicharacter supported)
+*  Manual job sync command for admins and developers
+*  In-game job menu with ox_lib context menu
+*  Multi-job support — players can hold multiple jobs
+*  Discord role-based job assignment via Honeybadger
+*  Automatic save delay to prevent race conditions
+*  Developer-friendly debug logging system
+*  Modular notification support (`crm-hud`, `ox_lib`, or debug print)
+* Active job system with on-duty highlighting
 
 ---
 
@@ -48,7 +48,7 @@ QBX Badger Bridge synchronizes Discord roles with QBX jobs in GTA V roleplay ser
 
 ---
 
-## 🧩 Configuration
+## Configuration
 
 ### `config.lua`
 
@@ -73,7 +73,7 @@ Config.AdminPermissions = {
 
 ---
 
-## 🧱 Ranked Jobs Example (`ranked_jobs.lua`)
+## Ranked Jobs Example (`ranked_jobs.lua`)
 
 ```lua
 RankedJobs = {
@@ -89,7 +89,7 @@ RankedJobs = {
 
 ---
 
-## 🕹️ Commands
+## Commands
 
 | Command      | Description                         | Permission           |
 | ------------ | ----------------------------------- | -------------------- |
@@ -99,7 +99,7 @@ RankedJobs = {
 
 ---
 
-## 🧠 How It Works
+## How It Works
 
 ### Flow Overview
 
@@ -136,7 +136,7 @@ flowchart LR
 
 ---
 
-## 🔔 Notifications
+## Notifications
 
 * **crm-hud** → Uses custom CRM notification popups
 * **ox_lib** → Uses ox_lib’s built-in notify
@@ -144,7 +144,7 @@ flowchart LR
 
 ---
 
-## 🧩 Debug Output Example
+## Debug Output Example
 
 ```
 [qbx_badger_bridge][DEBUG] Starting job sync for John Doe (1). Manual trigger: false
@@ -156,7 +156,7 @@ flowchart LR
 
 ---
 
-## 💡 Notes
+## Notes
 
 * Players can hold multiple jobs at once.
 * The **highest matching grade** from their Discord roles is always applied.
@@ -165,7 +165,7 @@ flowchart LR
 
 ---
 
-## 🧰 Credits
+## Credits
 
 * Developed by **Venado**
 * Based on **Qbox Framework**
@@ -174,7 +174,7 @@ flowchart LR
 
 ---
 
-## 📜 License
+## License
 
 This project is licensed under the MIT License.
 See `LICENSE` for more information.
