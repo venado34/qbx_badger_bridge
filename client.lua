@@ -37,15 +37,6 @@ RegisterNetEvent('qbx_badger_bridge:client:Notify', function(message, type)
 end)
 
 --------------------------------------------------------------------------------
--- Receive Jobs from Server
---------------------------------------------------------------------------------
-RegisterNetEvent('qbx_badger_bridge:client:receiveJobs', function(jobs)
-    PlayerJobs = jobs or {}
-    local jobList = next(PlayerJobs) and table.concat(PlayerJobs, ", ") or "(none)"
-    debug("Received jobs from server: " .. jobList)
-end)
-
---------------------------------------------------------------------------------
 -- Open Job Menu (Sorted by Grade)
 --------------------------------------------------------------------------------
 local function OpenJobMenu()
@@ -78,25 +69,36 @@ local function OpenJobMenu()
     end
 
     -- Register the context menu
-    exports.ox_lib.registerContext({
+    exports.ox_lib:registerContext({
         id = 'qbx_jobs_menu',
         title = 'My Jobs',
         options = options
     })
 
     -- Show the menu
-    exports.ox_lib.showContext('qbx_jobs_menu')
+    exports.ox_lib:showContext('qbx_jobs_menu')
 end
-
 
 --------------------------------------------------------------------------------
 -- Command: Open Job Menu
 --------------------------------------------------------------------------------
 RegisterCommand(Config.Commands.jobs, function()
     debug("Jobs command triggered")
+    -- Request jobs from the server; menu will open when jobs are received
     TriggerServerEvent('qbx_badger_bridge:server:getJobs')
-    Citizen.SetTimeout(100, OpenJobMenu)
 end, false)
+
+--------------------------------------------------------------------------------
+-- Receive Jobs from Server and Open Menu
+--------------------------------------------------------------------------------
+RegisterNetEvent('qbx_badger_bridge:client:receiveJobs', function(jobs)
+    PlayerJobs = jobs or {}
+    local jobList = next(PlayerJobs) and table.concat(PlayerJobs, ", ") or "(none)"
+    debug("Received jobs from server: " .. jobList)
+
+    -- Open the menu after jobs are received
+    OpenJobMenu()
+end)
 
 --------------------------------------------------------------------------------
 -- Set Active Job

@@ -44,7 +44,8 @@ function SyncPlayerJobs(playerSource, manual)
     local Player = GetPlayer(playerSource)
     if not Player then
         print(("^1[QBX Badger Bridge] Player not found for source %s^7"):format(playerSource))
-        TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource, "Player not found. Cannot sync jobs.", "error")
+        TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource, "Player not found. Cannot sync jobs.",
+            "error")
         return
     end
 
@@ -58,7 +59,8 @@ function SyncPlayerJobs(playerSource, manual)
     end
 
     if manual then
-        TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource, "Starting manual job synchronization...", "info")
+        TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource, "Starting manual job synchronization...",
+            "info")
     end
 
     --------------------------------------------------------------------------------
@@ -67,7 +69,8 @@ function SyncPlayerJobs(playerSource, manual)
     exports['honeybadger-resource']:GetPlayerRoles(playerSource, function(roles)
         if not roles then
             print(("^1[QBX Badger Bridge] Could not fetch Discord roles for source %s^7"):format(playerSource))
-            TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource, "Could not fetch your Discord roles. Please re-link your account.", "error")
+            TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource,
+                "Could not fetch your Discord roles. Please re-link your account.", "error")
             return
         end
 
@@ -101,11 +104,19 @@ function SyncPlayerJobs(playerSource, manual)
                 local success, err = exports['qbx_core']:AddPlayerToJob(Player.PlayerData.citizenid, jobName, jobGrade)
                 if success then
                     changesMade = true
-                    TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource, ('Added or updated job: %s (Grade %s)'):format(jobName, jobGrade), "success")
-                    if Config.Debug then print(('[%s][DEBUG] Added/Updated job %s to grade %s for %s'):format(GetCurrentResourceName(), jobName, jobGrade, playerSource)) end
+                    TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource,
+                        ('Added or updated job: %s (Grade %s)'):format(jobName, jobGrade), "success")
+                    if Config.Debug then
+                        print(('[%s][DEBUG] Added/Updated job %s to grade %s for %s'):format(
+                            GetCurrentResourceName(), jobName, jobGrade, playerSource))
+                    end
                 else
-                    TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource, ('Failed to assign job %s.'):format(jobName), "error")
-                    if Config.Debug then print(('[%s][ERROR] Failed to add job %s for %s: %s'):format(GetCurrentResourceName(), jobName, playerSource, tostring(err))) end
+                    TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource,
+                        ('Failed to assign job %s.'):format(jobName), "error")
+                    if Config.Debug then
+                        print(('[%s][ERROR] Failed to add job %s for %s: %s'):format(
+                            GetCurrentResourceName(), jobName, playerSource, tostring(err)))
+                    end
                 end
             end
         end
@@ -119,11 +130,19 @@ function SyncPlayerJobs(playerSource, manual)
                 local success, err = exports['qbx_core']:RemovePlayerFromJob(Player.PlayerData.citizenid, jobName)
                 if success then
                     changesMade = true
-                    TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource, ('Removed job: %s'):format(jobName), "info")
-                    if Config.Debug then print(('[%s][DEBUG] Removed job %s for %s'):format(GetCurrentResourceName(), jobName, playerSource)) end
+                    TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource,
+                        ('Removed job: %s'):format(jobName), "info")
+                    if Config.Debug then
+                        print(('[%s][DEBUG] Removed job %s for %s'):format(GetCurrentResourceName(),
+                            jobName, playerSource))
+                    end
                 else
-                    TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource, ('Failed to remove job %s.'):format(jobName), "error")
-                    if Config.Debug then print(('[%s][ERROR] Failed to remove job %s for %s: %s'):format(GetCurrentResourceName(), jobName, playerSource, tostring(err))) end
+                    TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource,
+                        ('Failed to remove job %s.'):format(jobName), "error")
+                    if Config.Debug then
+                        print(('[%s][ERROR] Failed to remove job %s for %s: %s'):format(
+                            GetCurrentResourceName(), jobName, playerSource, tostring(err)))
+                    end
                 end
             end
         end
@@ -143,17 +162,22 @@ function SyncPlayerJobs(playerSource, manual)
                 end)
                 if ok then
                     if Config.Debug then
-                        print(('[%s][DEBUG] Player data saved for source %s.'):format(GetCurrentResourceName(), playerSource))
+                        print(('[%s][DEBUG] Player data saved for source %s.'):format(GetCurrentResourceName(),
+                            playerSource))
                     end
-                    TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource, "Job data saved successfully.", "success")
+                    TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource, "Job data saved successfully.",
+                        "success")
                 else
-                    print(('[%s][ERROR] Failed to save player data for %s: %s'):format(GetCurrentResourceName(), playerSource, tostring(err)))
-                    TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource, "Failed to save job data.", "error")
+                    print(('[%s][ERROR] Failed to save player data for %s: %s'):format(GetCurrentResourceName(),
+                        playerSource, tostring(err)))
+                    TriggerClientEvent('qbx_badger_bridge:client:Notify', playerSource, "Failed to save job data.",
+                        "error")
                 end
             end)
         else
             if Config.Debug then
-                print(('[%s][DEBUG] No changes detected for source %s, skipping save.'):format(GetCurrentResourceName(), playerSource))
+                print(('[%s][DEBUG] No changes detected for source %s, skipping save.'):format(GetCurrentResourceName(),
+                    playerSource))
             end
         end
 
@@ -181,7 +205,6 @@ if Config.Multicharacter == 'qbx_core' then
         end
         SyncPlayerJobs(src, false)
     end)
-
 elseif Config.Multicharacter == 'crm-multicharacter' then
     RegisterNetEvent('crm-multicharacter:server:playerLoaded', function()
         local src = source
@@ -210,7 +233,8 @@ end
 RegisterCommand(Config.Commands.syncJobs, function(source)
     if not Config.Debug then
         -- Prevent use if debug is disabled
-        TriggerClientEvent('qbx_badger_bridge:client:Notify', source, "This command is only available in debug mode.", "error")
+        TriggerClientEvent('qbx_badger_bridge:client:Notify', source, "This command is only available in debug mode.",
+            "error")
         return
     end
 
@@ -234,12 +258,14 @@ RegisterCommand(Config.Commands.resyncAll, function(source, _)
         local Player = GetPlayer(source)
         if not Player then
             print("^1[QBX Badger Bridge] Invalid player tried to run " .. Config.Commands.resyncAll .. "^7")
-            TriggerClientEvent('qbx_badger_bridge:client:Notify', source, "You are not authorized to use this command.", "error")
+            TriggerClientEvent('qbx_badger_bridge:client:Notify', source, "You are not authorized to use this command.",
+                "error")
             return
         end
 
         if not IsPlayerAceAllowed(source, "qbx_badger_bridge.admin") then
-            TriggerClientEvent('qbx_badger_bridge:client:Notify', source, "You are not authorized to use this command.", "error")
+            TriggerClientEvent('qbx_badger_bridge:client:Notify', source, "You are not authorized to use this command.",
+                "error")
             return
         end
     end
@@ -264,7 +290,8 @@ RegisterCommand(Config.Commands.resyncAll, function(source, _)
     end
 
     if source ~= 0 then
-        TriggerClientEvent('qbx_badger_bridge:client:Notify', source, ("Resync triggered for %s players."):format(#players), "success")
+        TriggerClientEvent('qbx_badger_bridge:client:Notify', source,
+            ("Resync triggered for %s players."):format(#players), "success")
     end
 
     print(("^2[QBX Badger Bridge] Global job resync complete for %s players.^7"):format(#players))
@@ -278,7 +305,7 @@ RegisterNetEvent('qbx_badger_bridge:server:getJobs', function()
     local src = source
     local Player = GetPlayer(src)
     if not Player then return end
-    
+
     -- Player.PlayerData.jobs stores all jobs a player has
     TriggerClientEvent('qbx_badger_bridge:client:receiveJobs', src, Player.PlayerData.jobs)
 end)
@@ -289,16 +316,19 @@ RegisterNetEvent('qbx_badger_bridge:server:setActiveJob', function(jobName)
     local Player = GetPlayer(src)
     if not Player then return end
 
+    -- Get the player's current grade for this job
+    local jobGrade = Player.PlayerData.jobs[jobName]
+
     -- Check if the player actually has this job
-    if Player.PlayerData.jobs[jobName] then
-        
-        Player.Functions.SetActiveJob(jobName)
-        
+    if jobGrade then
+        exports.qbx_core:SetJob(Player.PlayerData.citizenid, jobName, jobGrade)
+
+
         -- Send notification to the player
-        local jobLabel = Player.PlayerData.job.label
-        TriggerClientEvent('qbx_badger_bridge:client:Notify', src, ("Your active job is now %s"):format(jobLabel), "success")
+        TriggerClientEvent('qbx_badger_bridge:client:Notify', src, ("Your active job is now %s"):format(jobName), "success")
     else
-        print(('[%s][ERROR] Player %s tried to set active job %s, but they do not have it.'):format(GetCurrentResourceName(), src, jobName))
+        print(('[%s][ERROR] Player %s tried to set active job %s, but they do not have it.'):format(
+            GetCurrentResourceName(), src, jobName))
         TriggerClientEvent('qbx_badger_bridge:client:Notify', src, "An error occurred while setting your job.", "error")
     end
 end)
