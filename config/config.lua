@@ -43,3 +43,13 @@ Config.Commands = {
 -- Controls how long the script waits before saving player data after assigning/removing jobs.
 --------------------------------------------------------------------------------
 Config.SaveDelay = 1000 -- Default: 1000 ms (1 second).
+
+--------------------------------------------------------------------------------
+-- Ignored Jobs
+-- A list of jobs that the bridge will NEVER remove from a player,
+-- even if they don't have the Discord role for it.
+-- This MUST include 'unemployed'.
+--------------------------------------------------------------------------------
+Config.IgnoredJobs = {
+    ['unemployed'] = true,
+}

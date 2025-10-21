@@ -128,7 +128,8 @@ function SyncPlayerJobs(playerSource, manual)
         --------------------------------------------------------------------------------
         local currentJobs = Player.PlayerData.jobs or {}
         for jobName, _ in pairs(currentJobs) do
-            if not discordJobs[jobName] then
+            -- Check if job is in Discord list AND not in the ignore list
+            if not discordJobs[jobName] and not Config.IgnoredJobs[jobName] then
                 local success, err = exports['qbx_core']:RemovePlayerFromJob(Player.PlayerData.citizenid, jobName)
                 if success then
                     changesMade = true
