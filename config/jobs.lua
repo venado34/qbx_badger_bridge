@@ -28,20 +28,20 @@ RankedJobs = {
     { roleName = "Scene Certified Trainee",            job = "scene_event_certified", grade = 0 },
 
     ------------------------------------------------------------------------------------
-    -- San Andreas Fire and Rescue (SAFR)
+    -- San Andreas ambulance and Rescue (SAFR)
     ------------------------------------------------------------------------------------
-    { roleName = "SAMS Chief of EMS",                  job = "fire",             grade = 11 },
-    { roleName = "SAMS Assistant Chief of EMS",        job = "fire",             grade = 10 },
-    { roleName = "SAMS Deputy Chief of EMS",           job = "fire",             grade = 9 },
-    { roleName = "SAMS Battalion Chief",               job = "fire",             grade = 8 },
-    { roleName = "SAMS Captain",                       job = "fire",             grade = 7 },
-    { roleName = "SAMS Lieutenant",                    job = "fire",             grade = 6 },
-    { roleName = "SAMS Senior Technician",             job = "fire",             grade = 5 },
-    { roleName = "SAMS Technician II",                 job = "fire",             grade = 4 },
-    { roleName = "SAMS Technician",                    job = "fire",             grade = 3 },
-    { roleName = "SAMS Junior Technician",             job = "fire",             grade = 2 },
-    { roleName = "SAMS",                               job = "fire",             grade = 1 },
-    { roleName = "SAMS Trainee",                       job = "fire",             grade = 0 },
+    { roleName = "SAMS Chief of EMS",                  job = "ambulance",             grade = 11 },
+    { roleName = "SAMS Assistant Chief of EMS",        job = "ambulance",             grade = 10 },
+    { roleName = "SAMS Deputy Chief of EMS",           job = "ambulance",             grade = 9 },
+    { roleName = "SAMS Battalion Chief",               job = "ambulance",             grade = 8 },
+    { roleName = "SAMS Captain",                       job = "ambulance",             grade = 7 },
+    { roleName = "SAMS Lieutenant",                    job = "ambulance",             grade = 6 },
+    { roleName = "SAMS Senior Technician",             job = "ambulance",             grade = 5 },
+    { roleName = "SAMS Technician II",                 job = "ambulance",             grade = 4 },
+    { roleName = "SAMS Technician",                    job = "ambulance",             grade = 3 },
+    { roleName = "SAMS Junior Technician",             job = "ambulance",             grade = 2 },
+    { roleName = "SAMS",                               job = "ambulance",             grade = 1 },
+    { roleName = "SAMS Trainee",                       job = "ambulance",             grade = 0 },
 
     ------------------------------------------------------------------------------------
     -- LSPD
@@ -128,11 +128,12 @@ RankedJobs = {
     { roleName = "Coroner",                            job = "coroner",               grade = 0 },
     { roleName = "SADOT",                              job = "sadot",                 grade = 0 },
     { roleName = "Parking Patrol",                     job = "parking_patrol",        grade = 0 },
-    { roleName = "Volunteer fire",                     job = "volunteer_fire",        grade = 0 },
+    { roleName = "Volunteer ambulance",                job = "volunteer_ambulance",   grade = 0 },
 
     ------------------------------------------------------------------------------------
     -- Locksmith / Development
     ------------------------------------------------------------------------------------
-    { roleName = "Development Team",                   job = "locksmith",             grade = 2 },
+    { roleName = "Management Pager",                   job = "locksmith",             grade = 0 },
+    { roleName = "Development Team",                   job = "locksmith",             grade = 0 },
 
 }

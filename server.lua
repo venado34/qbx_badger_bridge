@@ -91,7 +91,9 @@ function SyncPlayerJobs(playerSource, manual)
         for _, rankedJob in ipairs(RankedJobs) do
             local roleName, jobName, jobGrade = rankedJob.roleName, rankedJob.job, rankedJob.grade
             if tableContains(roles, roleName) then
-                discordJobs[jobName] = jobGrade
+                if not discordJobs[jobName] then
+                    discordJobs[jobName] = jobGrade
+                end
             end
         end
 

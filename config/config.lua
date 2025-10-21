@@ -35,7 +35,7 @@ Config.AdminPermissions = {
 Config.Commands = {
     jobs = 'jobs',                  -- Opens the job selection menu
     syncJobs = 'syncjobs',          -- Manually syncs player jobs
-    resyncAll = 'bridge_resyncall', -- admin: sync all online players
+    resyncAll = 'syncjobsall',      -- admin: sync all online players
 }
 
 --------------------------------------------------------------------------------
