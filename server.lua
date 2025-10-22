@@ -194,35 +194,27 @@ end
 -- Character Loaded Event (Modular)
 --------------------------------------------------------------------------------
 if Config.Multicharacter == 'qbx_core' then
-    AddEventHandler('QBCore:Server:OnPlayerLoaded', function()
+    RegisterNetEvent('QBCore:Server:OnPlayerLoaded', function()
         local src = source
-        local Player = GetPlayer(src)
-        if not Player then return end
-
+        local Player = exports['qbx_core']:GetPlayer(src)
+        if not Player then
+            if Config.Debug then
+                print(('[%s][DEBUG] OnPlayerLoaded fired but Player not ready for %s'):format(GetCurrentResourceName(), src))
+            end
+            return
+        end
         if Config.Debug then
-            print(('[%s][DEBUG] QBX-Core player %s (%s) loaded. Triggering job sync.'):format(
-                GetCurrentResourceName(),
-                Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname,
-                src
-            ))
+            print(('[%s][DEBUG] OnPlayerLoaded -> SyncPlayerJobs for %s'):format(GetCurrentResourceName(), src))
         end
         SyncPlayerJobs(src, false)
     end)
 elseif Config.Multicharacter == 'crm-multicharacter' then
-    RegisterNetEvent('crm-multicharacter:server:playerLoaded', function()
-        local src = source
-        local Player = GetPlayer(src)
-        if not Player then
-            print("^1[QBX Badger Bridge] No compatible character system detected. Automatic sync disabled.^7")
-            return
-        end
-
+    AddEventHandler('crm-multicharacter:server:playerLoaded', function(src)
+        src = src or source
+        local Player = exports['qbx_core']:GetPlayer(src)
+        if not Player then return end
         if Config.Debug then
-            print(('[%s][DEBUG] CRM-Multicharacter player %s (%s) loaded. Triggering job sync.'):format(
-                GetCurrentResourceName(),
-                Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname,
-                src
-            ))
+            print(('[%s][DEBUG] CRM playerLoaded -> SyncPlayerJobs for %s'):format(GetCurrentResourceName(), src))
         end
         SyncPlayerJobs(src, false)
     end)
